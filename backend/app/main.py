@@ -29,7 +29,7 @@ def dashboard():
         if not expiry: alerts.append("IBKR_FUTURES_EXPIRY is required; contract expiry is never guessed.")
         else:
             try:
-                quote=IbkrDelayedFuturesProvider(os.environ.get("IBKR_HOST","127.0.0.1"),int(os.environ.get("IBKR_PORT","7497")),int(os.environ.get("IBKR_CLIENT_ID","71")),expiry).latest_quote("MES")
+                quote=IbkrDelayedFuturesProvider(os.environ.get("IBKR_HOST","127.0.0.1"),int(os.environ.get("IBKR_PORT","7947")),int(os.environ.get("IBKR_CLIENT_ID","71")),expiry).latest_quote("MES")
                 market={"symbol":quote.symbol,"price":quote.price,"as_of":quote.as_of,"source":quote.source,"delayed":quote.delayed}
             except Exception as error: alerts.append(str(error))
     else: alerts.append("No entitled exchange-data provider has been configured. Automation cannot start.")
