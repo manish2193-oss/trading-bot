@@ -1,0 +1,11 @@
+.venv/
+__pycache__/
+*.py[cod]
+.env
+data/raw/
+data/processed/
+reports/
+paper-ledger.jsonl
+paper-runtime-state.json
+web/.env.local
+backend/.env
