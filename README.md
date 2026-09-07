@@ -11,6 +11,8 @@ This is a **research and paper-trading** project for liquid, exchange-traded fut
 
 The dashboard never invents prices. It locks automation until an entitled futures-market data provider is configured. Trading 212 can later be a **read-only** Invest/ISA portfolio synchronisation, not a CME futures connection.
 
+The first provider is IBKR's official TWS API in read-only mode. See [docs/ibkr-setup.md](docs/ibkr-setup.md). It requests delayed data and labels whether IBKR returned delayed or entitled live data.
+
 ```bash
 python3 -m venv .venv && . .venv/bin/activate
 pip install -r backend/requirements.txt
