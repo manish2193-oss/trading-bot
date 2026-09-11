@@ -1,55 +1,44 @@
-# Trading Bot — futures research lab
+# Trading Bot — SignalDesk
 
-This is a **research and paper-trading** project for liquid, exchange-traded futures. It cannot send live orders and contains no broker credentials or live API code.
+SignalDesk is an equity research and portfolio-monitoring application. It ranks eligible companies by industry using sourced prices, filings, quality, growth, valuation and trend metrics. It **does not place trades**, promise returns, or substitute for regulated financial advice.
 
-## Application
+## Workflow
 
-- `web/`: React/TypeScript dashboard with research status, controls, charts and PDF export (via browser print).
-- `backend/`: FastAPI paper-only service; it contains no broker order-routing code.
-- `supabase/migrations/`: isolated `trading_bot` schema for paper fills, quotes and runs, protected by RLS. It does not modify existing application tables.
-- `futures_research/`: deterministic Python research/backtesting engine.
+1. A scheduled Python job retrieves daily prices and indicators from Alpha Vantage and fundamentals from SEC EDGAR.
+2. The deterministic engine scores only records with at least 85% metric coverage. Every result retains a source and timestamp.
+3. Entry zones use price, the 50-day trend and 14-day ATR. Targets use a 2:1 reward/risk reference; these are review levels, not forecasts.
+4. You buy through your broker only after your own review, then record the actual quantity and fill price.
+5. Monitoring raises review alerts for targets, invalidation levels, trend deterioration, changed fundamentals and negative sourced news. It never sells automatically.
 
-The dashboard never invents prices. It locks automation until an entitled futures-market data provider is configured. Trading 212 can later be a **read-only** Invest/ISA portfolio synchronisation, not a CME futures connection.
+The free-data version uses a small universe because Alpha Vantage's free tier is limited to 25 requests per day. Full-market or intraday screening requires a licensed feed.
 
-The first provider is IBKR's official TWS API in read-only mode. See [docs/ibkr-setup.md](docs/ibkr-setup.md). It requests delayed data and labels whether IBKR returned delayed or entitled live data.
+## Run locally
 
 ```bash
-python3 -m venv .venv && . .venv/bin/activate
+cp .env.example .env
+python3 -m venv .venv
+. .venv/bin/activate
 pip install -r backend/requirements.txt
 uvicorn backend.app.main:app --reload --port 8000
-cd web && npm run dev
 ```
 
-The workflow is intentionally gated:
+In a second terminal:
 
-1. Import trustworthy, adjusted OHLCV data.
-2. Run a cost-aware backtest without look-ahead bias.
-3. Validate with walk-forward, out-of-sample periods.
-4. Paper trade the unchanged strategy and reconcile every fill.
-5. Review the live-trading checklist before adding any broker integration.
+```bash
+cd web
+npm install
+npm run dev
+```
 
-## First instrument
+The dashboard starts empty by design. Add a real Alpha Vantage key to `.env`; never add secrets to GitHub. The Supabase migration stays inside the existing `trading_bot` schema and does not modify public tables.
 
-Begin with one liquid micro contract, not many markets. The default sample configuration is MES (Micro E-mini S&P 500), where each index point is $5 and each tick is $1.25. Margin is not a risk budget: set the loss limits below independently.
+## AI boundary
 
-## Install and run
+OpenAI is optional. Use it after deterministic pre-screening to summarize cited evidence, extract risks from news, and produce structured explanations. Never ask a language model to invent prices, EPS or margins; those must come from market/filing providers. API billing is separate from a ChatGPT subscription.
 
-This first version uses only Python's standard library.
+## Tests
 
 ```bash
 python3 -m unittest discover -s tests -v
-python3 -m futures_research.cli backtest --csv examples/mes_sample.csv --fast 2 --slow 4
+cd web && npm run build
 ```
-
-CSV columns must be `timestamp,open,high,low,close,volume`, ordered oldest first. Use a data source whose exchange, session, roll/adjustment policy, timezone, and licensing you understand. Do not mix unadjusted contracts across rolls.
-
-## Safety defaults
-
-- One contract maximum
-- Long/flat only (no shorting in v1)
-- Next-bar-open execution, never same-bar fills
-- Commission and adverse slippage included in every fill
-- Daily loss circuit breaker and maximum drawdown reporting
-- No live broker module
-
-Read [docs/research-plan.md](docs/research-plan.md) before interpreting a backtest result.
